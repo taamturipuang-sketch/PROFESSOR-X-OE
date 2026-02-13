@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PROFESSOR X - 6+12 BIT MATRIX</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Kanit:wght@400;600&display=swap');
+        :root { --p-color: #0066ff; --b-color: #ff3333; --bg-dark: #050505; --gold: #cfad41; --gold-gradient: linear-gradient(to bottom, #cfad41 0%, #f7e08a 50%, #b8860b 100%); --safe: #00ff88; --loss-dim: #1a1a1a; }
+        ::-webkit-scrollbar { display: none !important; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--bg-dark); color: white; font-family: 'Kanit', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 10px; width: 100vw; overflow-x: hidden; }
+        
+        .header-title { background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; font-weight: 900; line-height: 1; margin-top: 5px; }
+        .sub-title { color: var(--gold); font-size: 0.65rem; font-family: 'Orbitron'; letter-spacing: 1px; margin-bottom: 8px; opacity: 0.8; }
+
+        .big-road-container { width: 100%; max-width: 480px; height: 120px; background: #000; border: 1px solid #222; display: flex; overflow-x: auto; border-radius: 4px; margin-bottom: 10px; }
+        .road-column { display: flex; flex-direction: column; min-width: 20px; border-right: 1px solid #111; }
+        .road-cell { width: 20px; height: 20px; border-bottom: 1px solid #111; display: flex; align-items: center; justify-content: center; }
+        .dot { width: 16px; height: 16px; border-radius: 50%; font-size: 8px; font-weight: bold; color: white; display: flex; align-items: center; justify-content: center; }
+        
+        .status-header { width: 100%; max-width: 480px; text-align: center; margin-bottom: 10px; padding: 5px; }
+        #gaugeText { font-size: 0.85rem; font-weight: bold; color: var(--gold); }
+
+        /* กะทัดรัด: เหรียญซ้าย ปุ่มขวา 2 คอลัมน์ */
+        .control-center { display: flex; width: 100%; max-width: 480px; background: #0d0d0d; border-radius: 8px; border: 1px solid #222; margin-bottom: 10px; padding: 10px; align-items: center; }
+        .prediction-zone { flex: 1; display: flex; justify-content: center; align-items: center; perspective: 1000px; }
+        
+        @keyframes infiniteSpin {
+            0% { transform: rotateY(0deg) rotateX(0deg); }
+            50% { transform: rotateY(180deg) rotateX(15deg); }
+            100% { transform: rotateY(360deg) rotateX(0deg); }
+        }
+
+        .chip { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; border: 4px dashed rgba(255,255,255,0.2); transform-style: preserve-3d; animation: infiniteSpin 7s linear infinite; position: relative; }
+        .chip.p-side { background: radial-gradient(circle, #0066ff, #002266); box-shadow: 0 0 20px rgba(0,102,255,0.6); }
+        .chip.b-side { background: radial-gradient(circle, #ff3333, #660000); box-shadow: 0 0 20px rgba(255,51,51,0.6); }
+        .chip.waiting { background: #222; color: #444; border: 2px solid #333; font-size: 0.7rem; }
+        
+        .action-zone { flex: 1.2; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+        .btn { padding: 10px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-family: 'Kanit'; font-size: 0.85rem; }
+        .btn-p { background: var(--p-color); box-shadow: 0 3px 0 #0033aa; }
+        .btn-b { background: var(--b-color); box-shadow: 0 3px 0 #aa0000; }
+        .btn-tool { background: #1a1a1a; color: #888; font-size: 0.7rem; border: 1px solid #333; }
+        
+        .money-bar { width: 100%; max-width: 480px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin-bottom: 10px; }
+        .m-box { background: #0a0a0a; border: 1px solid #1a1a1a; padding: 6px 2px; text-align: center; border-radius: 4px; font-size: 0.6rem; color: #666; }
+        .m-box input { width: 90%; background: transparent; border: none; color: white; text-align: center; font-family: 'Orbitron'; font-size: 0.7rem; outline: none; }
+        .m-box.active { border-color: var(--gold); background: rgba(207, 173, 65, 0.15); color: white; }
+        
+        .history-table-wrapper { width: 100%; max-width: 480px; height: 260px; overflow-y: auto; border: 1px solid #222; border-radius: 4px; background: #000; }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; table-layout: fixed; }
+        .history-table th { background: #0a0a0a; color: var(--gold); position: sticky; top: 0; border-bottom: 1px solid #222; padding: 6px 2px; }
+        .history-table td { width: 20%; padding: 4px 2px; text-align: center; border-bottom: 1px solid #111; line-height: 1; }
+        .res-win { color: var(--safe) !important; font-weight: bold; }
+        .res-loss { color: var(--loss-dim) !important; font-weight: normal; }
+    </style>
+</head>
+<body>
+    <div class="header-title">PROFESSOR X</div>
+    <div class="sub-title">LEVEL A: 6+12 BIT MATRIX</div>
+    
+    <div class="big-road-container" id="bigRoad"></div>
+    <div class="status-header"><div id="gaugeText">DNA COLLECTING (0/20)</div></div>
+    
+    <div class="control-center">
+        <div class="prediction-zone"><div id="chipDisplay" class="chip waiting">WAIT</div></div>
+        <div class="action-zone">
+            <button class="btn btn-p" id="pBtn">PLAYER</button>
+            <button class="btn btn-b" id="bBtn">BANKER</button>
+            <button class="btn btn-tool" id="undoBtn">UNDO</button>
+            <button class="btn btn-tool" id="resetBtn">RESET</button>
+        </div>
+    </div>
+
+    <div class="money-bar" id="moneyBar">
+        <div class="m-box" id="mBox1">M1<br><input type="number" id="m1Val" value="5"></div>
+        <div class="m-box" id="mBox2">M2<br><span id="m2Val">10</span></div>
+        <div class="m-box" id="mBox3">M3<br><span id="m3Val">25</span></div>
+        <div class="m-box" id="mBox4">M4<br><span id="m4Val">50</span></div>
+        <div class="m-box" id="mBox5">M5<br><span id="m5Val">100</span></div>
+        <div class="m-box" id="mBox6">M6<br><span id="m6Val">210</span></div>
+    </div>
+
+    <div class="history-table-wrapper">
+        <table class="history-table">
+            <thead><tr><th>RD.</th><th>REAL</th><th>PRED</th><th>STP</th><th>RESULT</th></tr></thead>
+            <tbody id="logBody"></tbody>
+        </table>
+    </div>
+
+<script>
+    let history = [];
+    let currentStep = 1;
+    let isWaitingMode = false;
+    const MIN_DNA = 20; 
+
+    function calcMoney() {
+        let m1 = parseInt(document.getElementById('m1Val').value) || 0;
+        document.getElementById('m2Val').innerText = m1 * 2;
+        document.getElementById('m3Val').innerText = m1 * 5;
+        document.getElementById('m4Val').innerText = m1 * 10;
+        document.getElementById('m5Val').innerText = m1 * 20;
+        document.getElementById('m6Val').innerText = m1 * 42;
+    }
+
+    // --- เครื่องบดข้อมูล Matrix 6+12 (ระดับ A) ---
+    function checkGrinder(slice) {
+        const len = slice.length;
+        const pCount = slice.filter(v => v === 'P').length;
+        const bCount = slice.filter(v => v === 'B').length;
+        // Even = สมดุล หรือ สีเดียวล้วน | Odd = เริ่มเอียง
+        return (pCount === len || bCount === len || pCount === bCount) ? 'EVEN' : 'ODD';
+    }
+
+    function getMatrixBitPred(dnaArr) {
+        if (dnaArr.length < MIN_DNA) return 'WAIT';
+        
+        // คำนวณ 6 Bit และ 12 Bit ใหม่ทุกครั้ง
+        const state6 = checkGrinder(dnaArr.slice(-6));
+        const state12 = checkGrinder(dnaArr.slice(-12));
+        const last = dnaArr[dnaArr.length - 1];
+
+        // Logic Matrix 6+12: ถ้าเริ่มเอียงทั้งคู่ให้ดักตัด ถ้ามีสมดุลให้ไหลตาม
+        if (state6 === 'ODD' && state12 === 'ODD') {
+            return (last === 'P') ? 'B' : 'P';
+        }
+        return last;
+    }
+
+    function record(val) {
+        const pred = getMatrixBitPred(history.map(x => x.real));
+        let stepDisplay = "-";
+
+        if (pred !== 'WAIT') {
+            const isWin = (val === pred);
+            if (!isWaitingMode) {
+                if (isWin) {
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                    currentStep = 1;
+                } else {
+                    currentStep++;
+                    if (currentStep > 6) { isWaitingMode = true; currentStep = 1; }
+                }
+            } else {
+                if (isWin) { isWaitingMode = false; currentStep = 1; }
+            }
+            stepDisplay = isWaitingMode ? "WAIT" : "M" + currentStep;
+        }
+        history.push({ real: val, pred: pred, step: stepDisplay, isWaiting: isWaitingMode });
+        updateUI();
+    }
+
+    function updateUI() {
+        renderRoad();
+        renderTable();
+        updateChip();
+        updateStatus();
+        for(let i=1; i<=6; i++) {
+            let el = document.getElementById('mBox'+i);
+            if(el) {
+                el.className = 'm-box';
+                if (!isWaitingMode && currentStep === i && history.length >= MIN_DNA) el.classList.add('active');
+            }
+        }
+    }
+
+    function updateChip() {
+        const el = document.getElementById('chipDisplay');
+        const nextPred = getMatrixBitPred(history.map(x => x.real));
+        if (nextPred === 'WAIT') {
+            el.className = "chip waiting"; el.innerText = "WAIT";
+        } else {
+            el.className = "chip " + (nextPred === 'P' ? "p-side" : "b-side");
+            el.innerText = nextPred;
+        }
+    }
+
+    function updateStatus() {
+        const text = document.getElementById('gaugeText');
+        if (history.length < MIN_DNA) {
+            text.innerText = `DNA COLLECTING (${history.length}/${MIN_DNA})`;
+            text.style.color = "var(--gold)";
+        } else {
+            text.innerText = isWaitingMode ? "FREEZING: WAIT FOR WIN" : "6+12 BIT MATRIX ACTIVE";
+            text.style.color = isWaitingMode ? "#ff4444" : "var(--safe)";
+        }
+    }
+
+    function renderRoad() {
+        const road = document.getElementById('bigRoad'); road.innerHTML = "";
+        let cols = [[]], last = "";
+        history.forEach(h => {
+            if(last==="" || (h.real===last && cols[cols.length-1].length<6)) cols[cols.length-1].push(h.real);
+            else cols.push([h.real]); last = h.real;
+        });
+        cols.forEach(col => {
+            let d = document.createElement('div'); d.className = 'road-column';
+            for(let i=0; i<6; i++) {
+                let c = document.createElement('div'); c.className = 'road-cell';
+                if(col[i]) {
+                    let dot = document.createElement('div'); dot.className = 'dot';
+                    dot.style.background = col[i]==='P' ? 'var(--p-color)' : 'var(--b-color)';
+                    dot.innerText = col[i]; c.appendChild(dot);
+                }
+                d.appendChild(c);
+            }
+            road.appendChild(d);
+        });
+        road.scrollLeft = road.scrollWidth;
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('logBody'); tbody.innerHTML = "";
+        history.slice().reverse().forEach((h, i) => {
+            const isWin = h.real === h.pred && h.pred !== 'WAIT';
+            tbody.innerHTML += `<tr>
+                <td>${history.length - i}</td>
+                <td style="color:${h.real==='P'?'#0066ff':'#ff3333'}; font-weight:bold;">${h.real}</td>
+                <td>${h.pred}</td>
+                <td>${h.step}</td>
+                <td class="${h.pred==='WAIT'?'':(isWin?'res-win':'res-loss')}">${h.pred==='WAIT'?'-':(isWin?'WIN':'LOSS')}</td>
+            </tr>`;
+        });
+    }
+
+    function undo() { if(history.length>0) { history.pop(); currentStep = 1; isWaitingMode = false; updateUI(); } }
+    function resetAll() { if(confirm("RESET ALL DATA?")) { history = []; currentStep = 1; isWaitingMode = false; updateUI(); } }
+
+    document.getElementById('pBtn').addEventListener('click', () => record('P'));
+    document.getElementById('bBtn').addEventListener('click', () => record('B'));
+    document.getElementById('undoBtn').addEventListener('click', undo);
+    document.getElementById('resetBtn').addEventListener('click', resetAll);
+    document.getElementById('m1Val').addEventListener('input', calcMoney);
+
+    calcMoney(); updateUI();
+</script>
+</body>
+</html>
